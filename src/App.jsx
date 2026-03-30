@@ -1,57 +1,74 @@
 import { useState } from "react"
 
-export default function App() {
-    const [word, setWord] = useState("hello")
 
-    // Modificamos a função para receber o elemento de input real
+
+export default function App() {
+    const [word, setWord] = useState("hello");
+    const [history, setHistory] = useState([]);
+
+
     const autoFocus = (input) => {
-        // Checa se algum caractere foi digitado (tamanho 1) 
-        // E checa se existe um próximo elemento irmão antes de saltar o foco.
         if (input.value.length === 1 && input.nextElementSibling) {
             input.nextElementSibling.focus();
         }
     }
 
 
-    const checkEqualsWords = () => {
-        const inputs = document.getElementById("inputs-row").children
-        word.toLowerCase()
+    const analyze = (values, secret) => {
+        return values.map((char, i) => {
 
-        for (let i = 0; i < inputs.length; i++) {
-            if (!word.includes(inputs[i].value.toLowerCase())) {
-                inputs[i].classList.add("input-error")
-                break
-            }
+            if (char.toLowerCase() === secret[i]) return { char, style: 'disabled:bg-info' };
+            if (secret.includes(char.toLowerCase())) return { char, style: 'disabled:bg-warning' };
 
-            let index = word.indexOf(inputs[i].value.toLowerCase())
-
-            if (index === i) {
-                inputs[i].classList.add("disabled:input-success")
-            } else {
-                inputs[i].classList.add("input-warning")
-            }
-
-        }
+            return { char, style: 'disabled:bg-error' };
+        })
     }
 
+
+    const checkEqualsWords = () => {
+        const row = document.getElementById("inputs-row");
+        const inputs = row.querySelectorAll("input");
+
+        const secretWord = word.toLowerCase()
+        const values = Array.from(inputs, input => input.value);
+
+        saveWords(analyze(values, secretWord));
+
+    }
+
+    const saveWords = (forSave) => {
+        setHistory(prev => [...prev, forSave]);
+    };
+
     return (
-        <div className="flex flex-col items-center justify-center h-screen">
+        <div className="flex flex-col items-center justify-center h-screen gap-5">
+            {history.map((phrase, index) => (
+                <div key={index} className="flex flex-row gap-5">
+                    {phrase.map((char, index) => (
+                        <input
+                            type="text"
+                            className={`input w-12 text-2xl ${char.style}`}
+                            disabled
+                            value={char.char}
+                            key={index}
+                        />
+                    ))}
+                </div>
+            ))}
 
-
-            <div id="inputs-row" className="flex flex-row gap-5">
+            < div id="inputs-row" className="flex flex-row gap-5">
                 {word.split('').map((letter, index) => (
                     <input
                         type="text"
-                        className="input w-10"
+                        className="input w-12 text-2xl"
                         maxLength={1}
                         minLength={1}
                         key={index}
-                        // Em vez de 'this', passamos a tag <input> através do evento de onChange (e.target)
                         onChange={(e) => autoFocus(e.target)}
                     />
                 ))}
-                <button onClick={() => checkEqualsWords()} className="btn">Ver</button>
             </div>
-        </div>
+            <button onClick={() => checkEqualsWords()} className="btn btn-primary btn-outline">Responder</button>
+        </div >
     )
 }
