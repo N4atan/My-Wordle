@@ -10,9 +10,9 @@ const KEYBOARD = [
 export default function App() {
     const [word, setWord] = useState(pickWord());
     const [history, setHistory] = useState([]);
-    const [charCodeCorrect, setCharCodeCorrect] = useState([]);
-    const [charCodePresent, setCharCodePresent] = useState([]);
-    const [charDisabled, setCharDisabled] = useState([]);
+    const [correctLetters, setCorrectLetters] = useState([]);
+    const [presentLetters, setPresentLetters] = useState([]);
+    const [disabledLetters, setDisabledLetters] = useState([]);
 
 
 
@@ -56,22 +56,41 @@ export default function App() {
 
 
     const analyze = (values, secret) => {
+        // { char, style: 'disabled:bg-error', status: 'error' }
+        // { char, style: 'disabled:bg-accent', status: 'correct' }
+        // { char, style: 'disabled:bg-warning', status: 'present' }
+        // { char, style: 'disabled:bg-base-300', status: 'repeat || not-present' }
+
+        /*
         return values.map((char, i) => {
 
             if (char === '' || char === null) {
-                return { char, style: 'disabled:bg-error' }
+                return { char, style: 'disabled:bg-error', status: 'error' }
             };
 
             if (char.toLowerCase() === secret[i]) {
-                setCharCodeCorrect(prev => [...prev, char.toLowerCase().charCodeAt(0)]);
-                return { char, style: 'disabled:bg-accent' }
+                setCorrectLetters(prev => [...prev, char.toLowerCase()]);
+                return { char, style: 'disabled:bg-accent', status: 'correct' }
             };
+
             if (secret.includes(char.toLowerCase())) {
-                setCharCodePresent(prev => [...prev, char.toLowerCase().charCodeAt(0)]);
-                return { char, style: 'disabled:bg-warning' }
+                
+
+                setPresentLetters(prev => [...prev, char.toLowerCase()]);
+                return { char, style: 'disabled:bg-warning', status: 'present' }
             };
-            setCharDisabled(prev => [...prev, char.toLowerCase().charCodeAt(0)]);
-            return { char, style: 'disabled:bg-error' };
+
+            setDisabledLetters(prev => [...prev, char.toLowerCase()]);
+            return { char, style: 'disabled:bg-base-300', status: 'not-present' };
+        })
+        */
+
+        values.map((char, i) => {
+            return {
+                char,
+                style: 'disabled:bg-base-300',
+                status: 'not-present'
+            }
         })
     }
 
@@ -85,7 +104,17 @@ export default function App() {
 
         if (values.includes('') || values.includes(null)) return alert("Preencha todos os campos!");
 
-        saveWords(analyze(values, secretWord));
+        const result = analyze(values, secretWord);
+        console.log(result)
+
+        saveWords(result);
+
+        /*
+        if (result.every(char => char.style === 'disabled:bg-accent')) {
+            alert("Parabéns! Você acertou a palavra!");
+            reset();
+        }
+        */
 
         inputs.forEach(input => input.value = "");
         if (inputs.length > 0) inputs[0].focus();
@@ -96,12 +125,20 @@ export default function App() {
     };
 
     const getLetterStyle = (letter) => {
-        const charCode = letter.toLowerCase().charCodeAt(0);
-        if (charCodeCorrect.includes(charCode)) return 'bg-green-500';
-        if (charCodePresent.includes(charCode)) return 'bg-warning';
-        if (charDisabled.includes(charCode)) return 'bg-error';
-        return 'bg-base-200';
+        const charLower = letter.toLowerCase();
+        if (correctLetters.includes(charLower)) return 'bg-green-500';
+        if (presentLetters.includes(charLower)) return 'bg-warning';
+        if (disabledLetters.includes(charLower)) return 'bg-error';
+        return 'bg-base-100';
     };
+
+    const reset = () => {
+        setWord(pickWord());
+        setHistory([]);
+        setCorrectLetters([]);
+        setPresentLetters([]);
+        setDisabledLetters([]);
+    }
 
     return (
         <div className="flex flex-col items-center justify-center h-screen gap-5">
@@ -160,7 +197,7 @@ export default function App() {
                         {row.map(letter => (
                             <div
                                 key={letter}
-                                className={`flex items-center justify-center w-10 h-10 rounded font-bold shadow-sm ${getLetterStyle(letter)}`}
+                                className={`flex items-center justify-center w-10 h-10 rounded font-bold shadow-sm border border-gray-300 ${getLetterStyle(letter)}`}
                             >
                                 {letter}
                             </div>
