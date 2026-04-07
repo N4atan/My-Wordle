@@ -1,9 +1,14 @@
 import { useState } from "react"
+import pickWord from "./utils/words"
 
-const ALPHABET = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+const KEYBOARD = [
+    "QWERTYUIOP".split(""),
+    "ASDFGHJKL".split(""),
+    "ZXCVBNM".split("")
+];
 
 export default function App() {
-    const [word, setWord] = useState("hello");
+    const [word, setWord] = useState(pickWord());
     const [history, setHistory] = useState([]);
     const [charCodeCorrect, setCharCodeCorrect] = useState([]);
     const [charCodePresent, setCharCodePresent] = useState([]);
@@ -12,8 +17,40 @@ export default function App() {
 
 
     const autoFocus = (input) => {
-        if (input.value.length === 1 && input.nextElementSibling) {
-            input.nextElementSibling.focus();
+        if (input.value.length === 1) {
+            if (input.nextElementSibling) {
+                input.nextElementSibling.focus();
+            } else {
+                document.getElementById("btn-check").focus();
+            }
+        }
+    }
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Backspace' && e.target.value === '') {
+            if (e.target.previousElementSibling) {
+                e.target.previousElementSibling.focus();
+            }
+        }
+
+        if (e.key === 'ArrowRight') {
+            if (e.target.nextElementSibling) {
+                e.target.nextElementSibling.focus();
+            }
+        }
+
+        if (e.key === 'ArrowLeft') {
+            if (e.target.previousElementSibling) {
+                e.target.previousElementSibling.focus();
+            }
+        }
+
+        if (e.key === 'ArrowDown') {
+            document.getElementById("btn-check").focus();
+        }
+
+        if (e.key === 'ArrowUp') {
+            document.getElementById("inputs-row").querySelectorAll("input")[0].focus();
         }
     }
 
@@ -27,7 +64,7 @@ export default function App() {
 
             if (char.toLowerCase() === secret[i]) {
                 setCharCodeCorrect(prev => [...prev, char.toLowerCase().charCodeAt(0)]);
-                return { char, style: 'disabled:bg-info' }
+                return { char, style: 'disabled:bg-accent' }
             };
             if (secret.includes(char.toLowerCase())) {
                 setCharCodePresent(prev => [...prev, char.toLowerCase().charCodeAt(0)]);
@@ -59,10 +96,10 @@ export default function App() {
     };
 
     const getLetterStyle = (letter) => {
-        const charCode = letter.charCodeAt(0);
-        if (charCodeCorrect.includes(charCode)) return 'bg-info';
+        const charCode = letter.toLowerCase().charCodeAt(0);
+        if (charCodeCorrect.includes(charCode)) return 'bg-green-500';
         if (charCodePresent.includes(charCode)) return 'bg-warning';
-        if (charDisabled.includes(charCode)) return 'bg-purple-500';
+        if (charDisabled.includes(charCode)) return 'bg-error';
         return 'bg-base-200';
     };
 
@@ -91,19 +128,43 @@ export default function App() {
                         minLength={1}
                         key={index}
                         onChange={(e) => autoFocus(e.target)}
+                        onKeyDown={handleKeyDown}
                     />
                 ))}
             </div>
-            <button onClick={() => checkEqualsWords()} className="btn btn-primary btn-outline">Responder</button>
+
+            <div className="flex flex-row gap-5">
+                <button
+                    id="btn-check"
+                    onClick={() => checkEqualsWords()}
+                    onKeyDown={handleKeyDown}
+                    className="btn btn-primary btn-outline"
+                >
+                    Responder
+                </button>
+
+                <button
+                    id="btn-check"
+                    onClick={() => alert(word)}
+                    onKeyDown={handleKeyDown}
+                    className="btn btn-secondary btn-outline"
+                >
+                    Mostrar Palavra
+                </button>
+            </div>
 
             {/* Representação do Teclado */}
-            <div className="flex flex-wrap justify-center gap-2 max-w-sm mt-5">
-                {ALPHABET.map(letter => (
-                    <div 
-                        key={letter} 
-                        className={`flex items-center justify-center w-10 h-10 rounded font-bold shadow-sm ${getLetterStyle(letter)}`}
-                    >
-                        {letter}
+            <div className="flex flex-col items-center gap-2 mt-5">
+                {KEYBOARD.map((row, i) => (
+                    <div key={i} className="flex justify-center gap-2 w-full">
+                        {row.map(letter => (
+                            <div
+                                key={letter}
+                                className={`flex items-center justify-center w-10 h-10 rounded font-bold shadow-sm ${getLetterStyle(letter)}`}
+                            >
+                                {letter}
+                            </div>
+                        ))}
                     </div>
                 ))}
             </div>
