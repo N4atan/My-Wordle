@@ -1,5 +1,7 @@
 import { useState } from "react"
 import pickWord from "./utils/words"
+import { useWindowSize } from 'react-use'
+import Confetti from 'react-confetti'
 
 const KEYBOARD = [
     "QWERTYUIOP".split(""),
@@ -17,81 +19,92 @@ export default function App() {
 
 
     const autoFocus = (input) => {
-        if (input.value.length === 1) {
-            if (input.nextElementSibling) {
-                input.nextElementSibling.focus();
-            } else {
-                document.getElementById("btn-check").focus();
-            }
-        }
+
+        if (input.value === '') return;
+
+        const nextInput = input.nextElementSibling;
+
+        if (!nextInput || nextInput.value !== '') return document.getElementById("btn-check").focus();
+
+        nextInput.value === '' ? input.nextElementSibling.focus() : input.nextElementSibling.nextElementSibling.focus();
     }
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Backspace' && e.target.value === '') {
-            if (e.target.previousElementSibling) {
-                e.target.previousElementSibling.focus();
-            }
-        }
+        switch (e.key) {
+            case 'Backspace':
+                if (e.target.value === '' && e.target.previousElementSibling) {
+                    e.target.previousElementSibling.focus();
+                }
+                break;
 
-        if (e.key === 'ArrowRight') {
-            if (e.target.nextElementSibling) {
-                e.target.nextElementSibling.focus();
-            }
-        }
+            case 'ArrowRight':
+                if (e.target.nextElementSibling) {
+                    e.target.nextElementSibling.focus();
+                }
+                break;
 
-        if (e.key === 'ArrowLeft') {
-            if (e.target.previousElementSibling) {
-                e.target.previousElementSibling.focus();
-            }
-        }
+            case 'ArrowLeft':
+                if (e.target.previousElementSibling) {
+                    e.target.previousElementSibling.focus();
+                }
+                break;
 
-        if (e.key === 'ArrowDown') {
-            document.getElementById("btn-check").focus();
-        }
+            case 'ArrowDown':
+                const btnCheck = document.getElementById("btn-check");
+                if (btnCheck) btnCheck.focus();
+                break;
 
-        if (e.key === 'ArrowUp') {
-            document.getElementById("inputs-row").querySelectorAll("input")[0].focus();
+            case 'ArrowUp':
+                const inputsRow = document.getElementById("inputs-row");
+                if (inputsRow) {
+                    inputsRow.querySelectorAll("input")[0].focus();
+                }
+                break;
+
+            default:
+                break;
         }
     }
 
 
+
     const analyze = (values, secret) => {
-        // { char, style: 'disabled:bg-error', status: 'error' }
-        // { char, style: 'disabled:bg-accent', status: 'correct' }
-        // { char, style: 'disabled:bg-warning', status: 'present' }
-        // { char, style: 'disabled:bg-base-300', status: 'repeat || not-present' }
-
-        /*
-        return values.map((char, i) => {
-
-            if (char === '' || char === null) {
-                return { char, style: 'disabled:bg-error', status: 'error' }
-            };
-
-            if (char.toLowerCase() === secret[i]) {
-                setCorrectLetters(prev => [...prev, char.toLowerCase()]);
-                return { char, style: 'disabled:bg-accent', status: 'correct' }
-            };
-
-            if (secret.includes(char.toLowerCase())) {
-                
-
-                setPresentLetters(prev => [...prev, char.toLowerCase()]);
-                return { char, style: 'disabled:bg-warning', status: 'present' }
-            };
-
-            setDisabledLetters(prev => [...prev, char.toLowerCase()]);
-            return { char, style: 'disabled:bg-base-300', status: 'not-present' };
-        })
-        */
-
-        values.map((char, i) => {
+        let result = values.map((char) => {
             return {
                 char,
                 style: 'disabled:bg-base-300',
                 status: 'not-present'
             }
         })
+
+        const copySecret = secret.split('');
+
+        result.forEach((item, i) => {
+            const char = item.char.toLowerCase();
+            if (char === secret[i]) {
+                item.style = 'disabled:bg-accent';
+                item.status = 'correct';
+                setCorrectLetters(prev => prev.includes(char) ? prev : [...prev, char]);
+                copySecret[i] = null;
+                return
+            }
+        })
+
+        result.forEach((item, i) => {
+            if (item.status !== 'not-present') return;
+
+            const charLower = item.char.toLowerCase();
+            const position = copySecret.indexOf(charLower);
+
+            if (position == -1) return;
+
+            item.style = 'disabled:bg-warning';
+            item.status = 'present';
+            setPresentLetters(prev => prev.includes(charLower) ? prev : [...prev, charLower]);
+            copySecret[position] = null;
+        })
+
+        return result;
     }
 
 
@@ -109,18 +122,18 @@ export default function App() {
 
         saveWords(result);
 
-        /*
+
         if (result.every(char => char.style === 'disabled:bg-accent')) {
             alert("Parabéns! Você acertou a palavra!");
             reset();
         }
-        */
 
         inputs.forEach(input => input.value = "");
         if (inputs.length > 0) inputs[0].focus();
     }
 
     const saveWords = (forSave) => {
+        console.log(forSave);
         setHistory(prev => [...prev, forSave]);
     };
 
@@ -133,11 +146,13 @@ export default function App() {
     };
 
     const reset = () => {
-        setWord(pickWord());
-        setHistory([]);
-        setCorrectLetters([]);
-        setPresentLetters([]);
-        setDisabledLetters([]);
+        setTimeout(() => {
+            setWord(pickWord());
+            setHistory([]);
+            setCorrectLetters([]);
+            setPresentLetters([]);
+            setDisabledLetters([]);
+        }, 2000)
     }
 
     return (
@@ -205,6 +220,14 @@ export default function App() {
                     </div>
                 ))}
             </div>
+            
+            <Confetti  
+                width={useWindowSize().width}
+                height={useWindowSize().height}
+                run={word.split('').every(char => correctLetters.includes(char))}
+                style={{display: word.split('').every(char => correctLetters.includes(char)) ? 'block' : 'none'}}
+                gravity={1}
+            />
         </div >
     )
 }
